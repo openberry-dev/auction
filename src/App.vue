@@ -123,9 +123,9 @@
 </template>
 
 <script>
-import web3 from '../contracts/web3';
-import auction from '../contracts/Auction';
-import auctionFactory from '../contracts/AuctionFactory';
+// import web3 from '../contracts/web3';
+// import auction from '../contracts/Auction';
+// import auctionFactory from '../contracts/AuctionFactory';
 
 export default {
   name: 'app',
@@ -146,115 +146,19 @@ export default {
     }
   },
   async beforeMount() {
-    web3.currentProvider.publicConfigStore.on('update', this.watchAddress)
-    this.auctionAddresses = await auctionFactory.methods.getAllAuctions().call()
-    this.totalContract = this.auctionAddresses.length
-    for(const index in this.auctionAddresses) {
-      this.getAuctionItem(this.auctionAddresses[index])
-      .then((data) => {
-        this.auctions.push(data)
-      })
-    }
   },
   methods: {
-    watchAddress(data) {
-      this.address = data.selectedAddress
-    },
     createAuction() {
-      if(this.address == '') {
-        alert("ウォレットが接続されていません")
-        return
-      }
-      const startPrice = web3.utils.toWei(this.form.startPrice, 'ether')
-      this.isLoading = true
-      auctionFactory.methods.createAuction(this.form.title, startPrice, this.form.description)
-      .send({ from: this.address })
-      .then((reciept) => {
-        console.log(reciept)
-        this.isLoading = false
-        this.form.title = ''
-        this.form.startPrice = 0
-        this.form.description = ''
-        return auctionFactory.methods.getAllAuctions().call();
-      })
-      .then((auctions) => {
-        this.auctionAddresses = auctions
-        this.totalContract = auctions.length
-      })
-      .catch(() => {
-        this.isLoading = false
-      })
     },
-    getAuctionItem(address) {
-      const auctionInstance = auction(address)
-      return auctionInstance.methods.getAucitoItem().call()
-      .then((auction) => {
-        const auctionInfo = {
-          title: auction[0],
-          startPrice: web3.utils.fromWei(auction[1], 'ether'),
-          description: auction[2],
-          status: auction[3]
-        }
-        return this.checkAuctionState(address)
-        .then((state) => {
-          var auctionState;
-          if(state[2] > 0) {
-            auctionState = {
-              highestBidder: state[1],
-              highestPrice: web3.utils.fromWei(state[2], 'ether'),
-            }
-          } else {
-            auctionState = {
-              highestBidder: '-',
-              highestPrice: 0
-            }
-          }
-          return {
-            address: address,
-            info: auctionInfo,
-            state: auctionState,
-            bidPrice: 0
-          }
-        })
-      })
+    getAuctionItem() {
     },
-    checkAuctionState(address) {
-      const auctionInstance = auction(address)
-      return auctionInstance.methods.checkAuctionState().call()
+    checkAuctionState() {
     },
-    placeBid(address, bidPrice, index) {
-      const auctionInstance = auction(address)
-      auctionInstance.methods.placeBid()
-      .send({
-        from: this.address,
-        value: web3.utils.toWei(bidPrice, 'ether'),
-      })
-      .then((reciept) => {
-        console.log(reciept)
-        return this.getAuctionItem(address)
-      })
-      .then((data) => {
-        this.$set(this.auctions, index, data)
-      })
+    placeBid() {
     },
-    finalizeAuction(address, index) {
-      const auctionInstance = auction(address)
-      auctionInstance.methods.finalizeAuction()
-      .send({from: this.address})
-      .then(() => {
-        this.getAuctionItem(address)
-        .then((data) => {
-          this.$set(this.auctions, index, data)
-        })
-      })
+    finalizeAuction() {
     },
-    withdrawBids(address) {
-      const auctionInstance = auction(address)
-      auctionInstance.methods.withdrawBids()
-      .send({from: this.address})
-      .then((reciept) => {
-        console.log(reciept)
-      })
+    withdrawBids() {
     }
   }
 }
